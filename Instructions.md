@@ -43,7 +43,7 @@ a. Setup/installation instructions\
 b. Brief explanation of your approach\
 c. Screenshots/examples of the chatbot in action
 3. Prepare your presentation (3-4 slides, PDF format)
-4. Send the GitHub link and presentation to Emily by EOD 2/8
+4. Send the GitHub link and presentation to **Emily** by **EOD 2/8**
    
 ### Tips for Success
 • Focus on creating a smooth, logical flow rather than complex technical features\
