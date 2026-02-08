@@ -1,7 +1,7 @@
 # Setup:
 ### Ensure that you have Python3 installed
-Step one: Navigate to application/chatbot.py\
-Step two: Execute chatbot.py (either in IDE or by executing "python3 chatbot.py")\
+Step one: Navigate to application/chatbot.py in your terminal\
+Step two: Run chatbot.py (either in IDE or by executing "python3 chatbot.py")\
 Step three: Follow the menu for your intended usecase
 
 # Approach
