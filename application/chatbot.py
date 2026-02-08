@@ -1,4 +1,6 @@
 from questions import trackingQuestions, packageStatus
+from datetime import datetime, timedelta
+import random
 
 class PackageTracker:
     def __init__(self):
@@ -18,6 +20,7 @@ class PackageTracker:
                 print("Would you like to:")
                 print("  1. Try again")
                 print("  2. Speak to a representative")
+                print("  3. Track another package")
                 return None
         
         question = self.questions[self.currQuestionIDX]
@@ -27,8 +30,7 @@ class PackageTracker:
             for i, option in enumerate(question['options'], 1):
                 print(f"  {i}. {option}")
             print(f"  5. Speak to a representative")
-        elif question['type'] == 'text':
-            print("  (or enter 0 to speak to a representative)")
+            print(f"  6. Track another package")
         
         return question
     
@@ -56,11 +58,17 @@ class PackageTracker:
         
         lastLocation = self.packageInfo.get('lastLocation', 'Unknown')
         print(f"Last Location: {lastLocation}")
+        
+        # Show shipping type if available
+        shippingType = self.packageInfo.get('shippingType', 'standard')
+        print(f"Shipping Type: {shippingType.replace('_', ' ').title()}")
+        
         print(f"\nWhat would you like to do?")
         
         for i, option in enumerate(options, 1):
             print(f"  {i}. {option}")
         print(f"  {len(options) + 1}. Speak to a representative")
+        print(f"  {len(options) + 2}. Track another package")
         
         return {'type': 'choice', 'options': options, 'key': 'action'}
     
@@ -69,6 +77,11 @@ class PackageTracker:
         if (question['type'] == 'choice' and userInput == '5') or \
            (question['type'] == 'text' and userInput == '0'):
             return True, "Transferring you to a representative..."
+        
+        # Check for 'track another package' request
+        if (question['type'] == 'choice' and userInput == '6') or \
+           (question['type'] == 'text' and userInput == '9'):
+            return 'TRACK_ANOTHER', "Switching to track another package..."
         
         if question['type'] == 'choice':
             try:
@@ -97,14 +110,18 @@ class PackageTracker:
     
     def validateOrderNum(self, value):
         value = value.strip()
+        if len(value) > 50:  # Add maximum length
+            return False, "Order number is too long. Please enter a valid order number."
         if len(value) < 4:
             return False, "Order numbers must be at least 4 characters. Please try again."
         if not value.isalnum():
             return False, "Order numbers contain only letters and numbers. Please try again."
         return True, None
-    
+
     def validateEmail(self, value):
         value = value.strip()
+        if len(value) > 254:  # RFC 5321 maximum email length
+            return False, "Email address is too long. Please try again."
         if '@' not in value or '.' not in value:
             return False, "Please enter a valid email address."
         return True, None
@@ -120,6 +137,9 @@ class PackageTracker:
                 'status': 'in_transit',
                 'lastLocation': 'Distribution Center - Chicago, IL',
                 'estDelivery': '2026-02-08',
+                'originalEstDelivery': '2026-02-08',
+                'shippingType': 'standard',
+                'lastUpdate': '2026-02-06',
                 'trackingEvents': [
                     {'date': '2026-02-05', 'location': 'Origin Facility', 'event': 'Picked up'},
                     {'date': '2026-02-06', 'location': 'Chicago, IL', 'event': 'In transit'}
@@ -129,6 +149,9 @@ class PackageTracker:
                 'status': 'delayed',
                 'lastLocation': 'Memphis, TN Hub',
                 'estDelivery': '2026-02-10',
+                'originalEstDelivery': '2026-02-07',
+                'shippingType': 'priority',
+                'lastUpdate': '2026-02-05',
                 'trackingEvents': [
                     {'date': '2026-02-04', 'location': 'Origin Facility', 'event': 'Picked up'},
                     {'date': '2026-02-05', 'location': 'Memphis, TN', 'event': 'Delayed - Weather'},
@@ -138,6 +161,9 @@ class PackageTracker:
                 'status': 'delivered',
                 'lastLocation': 'Customer Address',
                 'estDelivery': '2026-02-05',
+                'originalEstDelivery': '2026-02-05',
+                'shippingType': 'standard',
+                'lastUpdate': '2026-02-05',
                 'trackingEvents': [
                     {'date': '2026-02-03', 'location': 'Origin Facility', 'event': 'Picked up'},
                     {'date': '2026-02-04', 'location': 'Local Facility', 'event': 'Out for delivery'},
@@ -148,10 +174,49 @@ class PackageTracker:
                 'status': 'out_for_delivery',
                 'lastLocation': 'Local Delivery Facility',
                 'estDelivery': '2026-02-06',
+                'originalEstDelivery': '2026-02-06',
+                'shippingType': 'standard',
+                'lastUpdate': '2026-02-06',
                 'trackingEvents': [
                     {'date': '2026-02-04', 'location': 'Origin Facility', 'event': 'Picked up'},
                     {'date': '2026-02-05', 'location': 'Regional Hub', 'event': 'Arrived at hub'},
                     {'date': '2026-02-06', 'location': 'Local Facility', 'event': 'Out for delivery'}
+                ]
+            },
+            'D111': {
+                'status': 'not_shipped',
+                'lastLocation': 'Warehouse - Processing',
+                'estDelivery': '2026-02-10',
+                'originalEstDelivery': '2026-02-10',
+                'shippingType': 'standard',
+                'lastUpdate': '2026-02-07',
+                'trackingEvents': [
+                    {'date': '2026-02-07', 'location': 'Warehouse', 'event': 'Order received'},
+                    {'date': '2026-02-07', 'location': 'Warehouse', 'event': 'Processing'}
+                ]
+            },
+            'D222': {
+                'status': 'not_shipped',
+                'lastLocation': 'Warehouse - Ready to ship',
+                'estDelivery': '2026-02-09',
+                'originalEstDelivery': '2026-02-09',
+                'shippingType': 'priority',
+                'lastUpdate': '2026-02-07',
+                'trackingEvents': [
+                    {'date': '2026-02-06', 'location': 'Warehouse', 'event': 'Order received'},
+                    {'date': '2026-02-07', 'location': 'Warehouse', 'event': 'Ready to ship'}
+                ]
+            },
+            'D555': {
+                'status': 'delayed',
+                'lastLocation': 'Distribution Center - Atlanta, GA',
+                'estDelivery': '2026-02-08',
+                'originalEstDelivery': '2026-02-08',
+                'shippingType': 'standard',
+                'lastUpdate': '2026-02-01',  # No updates in 6 days
+                'trackingEvents': [
+                    {'date': '2026-01-30', 'location': 'Origin Facility', 'event': 'Picked up'},
+                    {'date': '2026-02-01', 'location': 'Atlanta, GA', 'event': 'In transit'}
                 ]
             }
         }
@@ -166,6 +231,9 @@ class PackageTracker:
             'status': 'in_transit',
             'lastLocation': 'Distribution Center - Chicago, IL',
             'estDelivery': '2026-02-08',
+            'originalEstDelivery': '2026-02-08',
+            'shippingType': 'standard',
+            'lastUpdate': '2026-02-06',
             'trackingEvents': [
                 {'date': '2026-02-05', 'location': 'Origin Facility', 'event': 'Picked up'},
                 {'date': '2026-02-06', 'location': 'Chicago, IL', 'event': 'In transit'}
@@ -198,20 +266,23 @@ class PackageTracker:
         elif action == "File a damage claim":
             return self.file_damage_claim()
         
-        elif action == "View reason for delay":
-            return self.show_delay_reason()
-        
         elif action == "Get updated delivery estimate":
             return self.get_updated_estimate()
-        
-        elif action == "Report as lost (if past expected date by 3+ days)":
-            return self.file_lost_package_claim()
         
         elif action == "See estimated delivery window":
             return self.show_delivery_window()
         
         elif action == "Arrange to pick up at facility instead":
             return self.arrange_pickup()
+        
+        elif action == "Cancel order (not yet shipped)":
+            return self.cancel_order_not_shipped()
+        
+        elif action == "Request priority shipping refund":
+            return self.refund_priority_shipping()
+        
+        elif action == "Reorder package (no recent updates)":
+            return self.reorder_stalled_package()
         
         return "Action completed."
     
@@ -223,7 +294,9 @@ class PackageTracker:
         result = f"\n{'='*50}\n"
         result += f"Current Status: {self.packageInfo['status'].replace('_', ' ').title()}\n"
         result += f"Last Known Location: {self.packageInfo.get('lastLocation', 'Unknown')}\n"
-        result += f"Estimated Delivery: {self.packageInfo.get('estDelivery', 'Unknown')}\n\n"
+        result += f"Shipping Type: {self.packageInfo.get('shippingType', 'standard').replace('_', ' ').title()}\n"
+        result += f"Estimated Delivery: {self.packageInfo.get('estDelivery', 'Unknown')}\n"
+        result += f"Last Update: {self.packageInfo.get('lastUpdate', 'Unknown')}\n\n"
         result += "Tracking History:\n"
         result += f"{'-'*50}\n"
         
@@ -287,19 +360,8 @@ class PackageTracker:
     def file_damage_claim(self):
         return "\nDamage claim initiated.\nReference: DC123456\n\nNext steps:\n  1. Keep all packaging materials\n  2. Take photos of damage\n  3. Reply to confirmation email with photos\n\nYou'll hear back within 2 business days."
     
-    def show_delay_reason(self):
-        return "\nDelay Reason: Weather conditions in transit region\nUpdated estimate: 2-3 days beyond original date"
-    
     def get_updated_estimate(self):
         return "\nUpdated delivery estimate: February 10, 2026\nWe apologize for the delay."
-    
-    def file_lost_package_claim(self):
-        # Calculate days since expected delivery based on packageInfo in database
-        days_since_expected = 5 # Seed data for testing 
-        if days_since_expected >= 3:
-            return "\nLost package claim filed.\nReference: LP123456\n\nWe'll issue a refund or send a replacement.\nYou'll receive an email within 24 hours."
-        else:
-            return f"\nPackage is only {days_since_expected} days past expected delivery.\nWe recommend waiting 3 days before filing a lost claim.\n\nWould you like to speak with a representative?"
     
     def check_delivery_location(self):
         return "\nPackage was delivered to: Front door\nDelivered on: 2026-02-05 at 3:42 PM"
@@ -322,94 +384,290 @@ class PackageTracker:
                 return "\nPickup arrangement cancelled."
             else:
                 print("Invalid choice. Please enter 1, 2, or 0.")
-
-def run_chatbot():
-    print("\n" + "="*60)
-    print("PACKAGE TRACKING DEMO CHATBOT")
-    print("="*60)
-    print("\nDemo tracking numbers you can use:")
-    print("  • D123 - In transit package")
-    print("  • D456 - Delayed package")
-    print("  • D789 - Delivered package")
-    print("  • D999 - Out for delivery")
-    print("  • Any other order number - Generic in-transit package")
-    print("\nEmail can be anything valid (e.g., test@email.com)")
-    print("="*60)
     
-    bot = PackageTracker()
-    
-    # Initial questions loop
-    while bot.currQuestionIDX < len(bot.questions):
-        question = bot.display_question()
+    def cancel_order_not_shipped(self):
+        # Safety check
+        if self.packageInfo is None:
+            return "Unable to process cancellation. Package information not available."
         
-        if question is None:
-            # Package not found case
-            while True:
-                choice = input("\nYour choice: ").strip()
-                if choice == '1':
-                    bot = PackageTracker()
-                    break
-                elif choice == '2':
-                    print("Transferring to representative...")
-                    return
-                else:
-                    print("Invalid choice. Please enter 1 or 2.")
+        print("\n" + "="*50)
+        print("CANCEL ORDER")
+        print("="*50)
+        print("\nYour order has not shipped yet and can be cancelled.")
+        print(f"Order Number: {self.collectedData.get('order_number', 'Unknown')}")
+        print(f"Current Status: {self.packageInfo['status'].replace('_', ' ').title()}")
         
-        userInput = input("\nYour response: ").strip()
-        
-        is_transfer, message = bot.handle_response(question, userInput)
-        
-        if message:
-            print(message)
-        
-        if is_transfer:
-            return
-    
-    # All questions answered - now look up package and show action menu
-    action_question = bot.display_question()
-    
-    if action_question is None:
-        # No actions available or package not found
         while True:
-            choice = input("\nYour choice: ").strip()
-            if choice == '1':
-                run_chatbot()
-                return
-            elif choice == '2':
-                print("Transferring to representative...")
-                return
+            confirm = input("\nAre you sure you want to cancel this order? (yes/no): ").strip().lower()
+            if confirm == 'yes':
+                # Generate cancellation reference
+                cancel_ref = f"CN{random.randint(100000, 999999)}"
+                result = "\n" + "="*50 + "\n"
+                result += "ORDER CANCELLED SUCCESSFULLY\n"
+                result += "="*50 + "\n"
+                result += f"Cancellation Reference: {cancel_ref}\n"
+                result += "Refund will be processed within 3-5 business days.\n"
+                result += "You will receive a confirmation email shortly.\n"
+                result += "="*50
+                return result
+            elif confirm == 'no':
+                return "\nCancellation aborted. Your order will continue processing."
             else:
-                print("Invalid choice. Please enter 1 or 2.")
+                print("Invalid input. Please enter 'yes' or 'no'.")
     
-    # Main action menu loop
-    while True:
-        userInput = input("\nYour choice: ").strip()
+    def refund_priority_shipping(self):
+        # Safety check
+        if self.packageInfo is None:
+            return "Unable to process refund. Package information not available."
         
+        print("\n" + "="*50)
+        print("PRIORITY SHIPPING REFUND REQUEST")
+        print("="*50)
+        
+        # Check if this is priority shipping
+        shipping_type = self.packageInfo.get('shippingType', 'standard')
+        if shipping_type != 'priority':
+            return "\nThis order does not have priority shipping.\nNo refund is applicable."
+        
+        # Calculate delay
+        original_est = self.packageInfo.get('originalEstDelivery', '')
+        current_est = self.packageInfo.get('estDelivery', '')
+        
+        print(f"\nShipping Type: Priority")
+        print(f"Original Estimated Delivery: {original_est}")
+        print(f"Current Estimated Delivery: {current_est}")
+        
+        # Parse dates to calculate delay (simplified for demo)
         try:
-            choice = int(userInput)
-            if choice == len(action_question['options']) + 1:
-                print("Transferring to representative...")
-                break
-            elif 1 <= choice <= len(action_question['options']):
-                selected_action = action_question['options'][choice - 1]
-                result = bot.handle_action(selected_action)
-                print(result)
+            orig_date = datetime.strptime(original_est, '%Y-%m-%d')
+            curr_date = datetime.strptime(current_est, '%Y-%m-%d')
+            delay_days = (curr_date - orig_date).days
+            
+            print(f"Delay: {delay_days} days")
+            
+            if delay_days >= 3:
+                refund_ref = f"RF{random.randint(100000, 999999)}"
+                result = "\n" + "="*50 + "\n"
+                result += "PRIORITY SHIPPING REFUND APPROVED\n"
+                result += "="*50 + "\n"
+                result += f"Refund Reference: {refund_ref}\n"
+                result += f"Refund Amount: $15.99 (Priority Shipping Cost)\n"
+                result += "Refund will be processed within 3-5 business days.\n"
+                result += "You will receive a confirmation email shortly.\n"
+                result += "="*50
+                return result
+            else:
+                return f"\nDelay is only {delay_days} days. Priority shipping refund requires a delay of 3 or more days.\nPlease check back if the delay exceeds 3 days."
+        except:
+            return "\nUnable to calculate delay. Please contact customer service."
+    
+    def reorder_stalled_package(self):
+        # Safety check
+        if self.packageInfo is None:
+            return "Unable to process reorder. Package information not available."
+        
+        print("\n" + "="*50)
+        print("REORDER STALLED PACKAGE")
+        print("="*50)
+        
+        # Check days since last update
+        last_update = self.packageInfo.get('lastUpdate', '')
+        print(f"\nLast Tracking Update: {last_update}")
+        
+        # Calculate days since last update (simplified for demo)
+        try:
+            last_update_date = datetime.strptime(last_update, '%Y-%m-%d')
+            current_date = datetime.strptime('2026-02-07', '%Y-%m-%d')  # Demo current date
+            days_stalled = (current_date - last_update_date).days
+            
+            print(f"Days Without Update: {days_stalled}")
+            
+            if days_stalled >= 5:
+                print("\nYour package appears to be stalled in transit.")
+                print("We can cancel the current order and create a new one.")
                 
-                # Ask if they need anything else with validation loop
                 while True:
-                    another = input("\nNeed help with anything else? (yes/no): ").strip().lower()
-                    if another == 'yes':
-                        bot.display_action_menu()
-                        break
-                    elif another == 'no':
-                        print("\nThank you for using our package tracking service!")
-                        return
+                    confirm = input("\nWould you like to reorder? (yes/no): ").strip().lower()
+                    if confirm == 'yes':
+                        # Generate new order details
+                        new_order_num = f"D{random.randint(100, 999)}"
+                        new_delivery_date = (current_date + timedelta(days=random.randint(3, 7))).strftime('%Y-%m-%d')
+                        cancel_ref = f"CN{random.randint(100000, 999999)}"
+                        
+                        result = "\n" + "="*50 + "\n"
+                        result += "REORDER SUCCESSFUL\n"
+                        result += "="*50 + "\n"
+                        result += f"Original Order Cancelled: {self.collectedData.get('order_number', 'Unknown')}\n"
+                        result += f"Cancellation Reference: {cancel_ref}\n\n"
+                        result += f"New Order Number: {new_order_num}\n"
+                        result += f"New Estimated Delivery: {new_delivery_date}\n"
+                        result += f"Shipping Type: {self.packageInfo.get('shippingType', 'standard').title()}\n\n"
+                        result += "Your new order is being processed and will ship soon.\n"
+                        result += "You will receive tracking updates via email.\n"
+                        result += "="*50
+                        return result
+                    elif confirm == 'no':
+                        return "\nReorder cancelled. Your original order remains active."
                     else:
                         print("Invalid input. Please enter 'yes' or 'no'.")
             else:
-                print("Invalid choice. Please try again.")
-        except ValueError:
-            print("Please enter a number.")
+                return f"\nPackage last updated {days_stalled} days ago.\nReorder option is available after 5 days without updates.\nPlease check back later if no updates occur."
+        except:
+            return "\nUnable to determine update history. Please contact customer service."
+
+def run_chatbot():
+    try: 
+        print("\n" + "="*60)
+        print("PACKAGE TRACKING DEMO CHATBOT")
+        print("="*60)
+        print("\nDemo tracking numbers you can use:")
+        print("  • D123 - In transit package")
+        print("  • D456 - Delayed package (priority shipping)")
+        print("  • D789 - Delivered package")
+        print("  • D999 - Out for delivery")
+        print("  • D111 - Not shipped (processing)")
+        print("  • D222 - Not shipped (ready to ship, priority)")
+        print("  • D555 - Stalled package (no updates in 6 days)")
+        print("  • Any other - Generic in-transit package")
+        print("\nEmail can be anything valid (e.g., test@email.com)")
+        print("(Enter 0 to speak to a representative)")
+        print("(Enter 9 to track another package)")
+        print("="*60)
+        
+        bot = PackageTracker()
+        
+        # Initial questions loop
+        while bot.currQuestionIDX < len(bot.questions):
+            question = bot.display_question()
+            
+            if question is None:
+                # Package not found case
+                while True:
+                    choice = input("\nYour choice: ").strip()
+                    if choice == '1':
+                        bot = PackageTracker()
+                        break
+                    elif choice == '2':
+                        print("Transferring to representative...")
+                        return
+                    elif choice == '3':
+                        # Confirm before tracking another package
+                        while True:
+                            confirm = input("\nAre you sure you want to track another package? This will cancel the current chat. (yes/no): ").strip().lower()
+                            if confirm == 'yes':
+                                run_chatbot()
+                                return
+                            elif confirm == 'no':
+                                break
+                            else:
+                                print("Invalid input. Please enter 'yes' or 'no'.")
+                    else:
+                        print("Invalid choice. Please enter 1, 2, or 3.")
+            
+            userInput = input("\nYour response: ").strip()
+            
+            is_transfer, message = bot.handle_response(question, userInput)
+            
+            if message:
+                print(message)
+            
+            if is_transfer == True:
+                return
+            elif is_transfer == 'TRACK_ANOTHER':
+                # Confirm before tracking another package
+                while True:
+                    confirm = input("\nAre you sure you want to track another package? This will cancel the current chat. (yes/no): ").strip().lower()
+                    if confirm == 'yes':
+                        run_chatbot()
+                        return
+                    elif confirm == 'no':
+                        break
+                    else:
+                        print("Invalid input. Please enter 'yes' or 'no'.")
+        
+        # All questions answered - now look up package and show action menu
+        action_question = bot.display_question()
+        
+        if action_question is None:
+            # No actions available or package not found
+            while True:
+                choice = input("\nYour choice: ").strip()
+                if choice == '1':
+                    run_chatbot()
+                    return
+                elif choice == '2':
+                    print("Transferring to representative...")
+                    return
+                elif choice == '3':
+                    # Confirm before tracking another package
+                    while True:
+                        confirm = input("\nAre you sure you want to track another package? This will cancel the current chat. (yes/no): ").strip().lower()
+                        if confirm == 'yes':
+                            run_chatbot()
+                            return
+                        elif confirm == 'no':
+                            break
+                        else:
+                            print("Invalid input. Please enter 'yes' or 'no'.")
+                else:
+                    print("Invalid choice. Please enter 1, 2, or 3.")
+        
+        # Main action menu loop
+        while True:
+            userInput = input("\nYour choice: ").strip()
+            
+            try:
+                choice = int(userInput)
+                
+                # Check for "Speak to representative" option
+                if choice == len(action_question['options']) + 1:
+                    print("Transferring to representative...")
+                    break
+                
+                # Check for "Track another package" option
+                elif choice == len(action_question['options']) + 2:
+                    while True:
+                        confirm = input("\nAre you sure you want to track another package? This will cancel the current chat. (yes/no): ").strip().lower()
+                        if confirm == 'yes':
+                            run_chatbot()
+                            return
+                        elif confirm == 'no':
+                            bot.display_action_menu()
+                            break
+                        else:
+                            print("Invalid input. Please enter 'yes' or 'no'.")
+                
+                # Valid action choice
+                elif 1 <= choice <= len(action_question['options']):
+                    selected_action = action_question['options'][choice - 1]
+                    result = bot.handle_action(selected_action)
+                    print(result)
+                    
+                    # Ask if they need anything else with validation loop
+                    while True:
+                        another = input("\nNeed help with anything else? (yes/no): ").strip().lower()
+                        if another == 'yes':
+                            bot.display_action_menu()
+                            break
+                        elif another == 'no':
+                            print("\nThank you for using our package tracking service!")
+                            return
+                        else:
+                            print("Invalid input. Please enter 'yes' or 'no'.")
+                else:
+                    print("Invalid choice. Please try again.")
+            except ValueError:
+                print("Please enter a number.")
+    except KeyboardInterrupt:
+        print("\n\nSession interrupted. Thank you for using our package tracking service!")
+        return
+    except Exception as e:
+        print("\n\nAn unexpected error occurred. Please try again or contact customer support.")
+        print("If the problem persists, please speak to a representative.")
+        return
 
 if __name__ == "__main__":
-    run_chatbot()
+    try:
+        run_chatbot()
+    except KeyboardInterrupt:
+        print("\n\nGoodbye!")

@@ -1,0 +1,8 @@
+Two of the biggest errors handling that would likely be experienced on a regular basis by end-users
+would be invalid/mistaken inputs while traversing the menus as well as improper inputs for user data
+(emails, order numbers, addresses). For the former, if an unexpected or disallowed input is received, 
+the chatbot will reprompt the user with the previous choice, to hopefully allow them to reattempt and 
+progress where they intended. As for the latter, basic forms of input validation for items such as emails
+and addresses would be put in place as well as database lookups to confirm related information (emails/order numbers)
+do infact match and can be correlated to one another as without such matching, a user with many orders could
+experience errors when trying to retrieve updated information on a specific order. 

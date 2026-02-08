@@ -1,13 +1,13 @@
 trackingQuestions = [
     {
         'key': 'order_number',
-        'prompt': "Please enter your order number:",
+        'prompt': "Hi! I can help you track down your package. Please enter your order number:",
         'type': 'text',
         'validator': 'validateOrderNum'
     },
     {
         'key': 'email',
-        'prompt': "Please enter the email address for this package:",
+        'prompt': "Please enter the email address for this order:",
         'type': 'text',
         'validator': 'validateEmail'
     }
@@ -26,14 +26,19 @@ packageStatus = {
         "File a damage claim"
     ],
     'delayed': [
-        "View reason for delay",
         "Get updated delivery estimate",
-        "Report as lost (if past expected date by 3+ days)"
+        "Request priority shipping refund",
+        "Reorder package (no recent updates)"
     ],
     'out_for_delivery': [
-        "Update delivery instructions",
         "See estimated delivery window",
+        "Update delivery instructions",
         "Arrange to pick up at facility instead"
+    ],
+    'not_shipped': [
+        "View current location and tracking history",
+        "Check estimated delivery date",
+        "Cancel order (not yet shipped)"
     ],
     'not_found': [
         "Verify order number and email",
