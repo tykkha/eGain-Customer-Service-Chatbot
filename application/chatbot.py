@@ -263,7 +263,7 @@ class PackageTracker:
         elif action == "Report package as not received":
             return self.report_not_received()
         
-        elif action == "File a damage claim":
+        elif action == "File a damage/missing claim":
             return self.file_damage_claim()
         
         elif action == "Get updated delivery estimate":
@@ -358,7 +358,7 @@ class PackageTracker:
                 print("Invalid input. Please enter 'yes' or 'no'.")
     
     def file_damage_claim(self):
-        return "\nDamage claim initiated.\nReference: DC123456\n\nNext steps:\n  1. Keep all packaging materials\n  2. Take photos of damage\n  3. Reply to confirmation email with photos\n\nYou'll hear back within 2 business days."
+        return "\nDamage/missing claim initiated.\nReference: DC123456\n\nNext steps:\n  1. Keep all packaging materials (if applicable)\n  2. Take photos of damage/expected delivery location\n  3. Reply to confirmation email with photos\n\nYou'll hear back within 2 business days."
     
     def get_updated_estimate(self):
         return "\nUpdated delivery estimate: February 10, 2026\nWe apologize for the delay."

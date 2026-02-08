@@ -23,7 +23,7 @@ packageStatus = {
     'delivered': [
         "Check where package was left",
         "Report package as not received",
-        "File a damage claim"
+        "File a damage/missing claim"
     ],
     'delayed': [
         "Get updated delivery estimate",
